@@ -5,43 +5,20 @@ library(viridis)        # FIXME: se usa?
 library(sp)             # FIXME: se usa?
 library(RColorBrewer)   # FIXME: se usa?
 
-## FIXME: que se cargue una sola vez el mapa
+GBA = readLines("data/gba.dat")
+AMBA = readLines("data/amba.dat")
+
 ## MAPAS
 mapaAMBA <- st_read("data/departamento.shp")
 argen <- st_read('data/provincia.json')
 colnames(argen) <- c("gid", "entidad", "objeto", "fna", "gna", "Provincia",
                      "in1", "fdc", "sag", "geometry")
 
-## FIXME: sacarlo a un archivo 
-GBA <- c("Almirante Brown","Avellaneda","Berazategui","Berisso","Brandsen",
-         "Campana","Cañuelas","Ensenada","Escobar","Esteban Echeverría",
-         "Exaltación de la Cruz","Ezeiza","Florencio Varela",
-         "General Las Heras","General Rodríguez","General San Martín",
-         "Hurlingham","Ituzaingó","José C. Paz","La Matanza","Lanús","La Plata",
-         "Lomas de Zamora","Luján","Marcos Paz","Malvinas Argentinas","Moreno",
-         "Merlo","Morón","Pilar","Presidente Perón","Quilmes","San Fernando",
-         "San Isidro","San Miguel","San Vicente","Tigre","Tres de Febrero",
-         "Vicente López","Zárate")
-
-AMBA <- c("Ciudad Autónoma de Buenos Aires","Almirante Brown","Avellaneda",
-          "Berazategui","Berisso","Brandsen","Campana","Cañuelas","Ensenada",
-          "Escobar","Esteban Echeverría","Exaltación de la Cruz","Ezeiza",
-          "Florencio Varela","General Las Heras","General Rodríguez",
-          "General San Martín","Hurlingham","Ituzaingó","José C. Paz",
-          "La Matanza","Lanús","La Plata","Lomas de Zamora","Luján",
-          "Marcos Paz","Malvinas Argentinas","Moreno","Merlo","Morón","Pilar",
-          "Presidente Perón","Quilmes","San Fernando","San Isidro","San Miguel",
-          "San Vicente","Tigre","Tres de Febrero","Vicente López","Zárate")
-
 graficosemanas <- function(datos) {
     
     nsem <- max(as.numeric(datos$SemanaNum))
-    
-    salidaPS <- bind_rows(lapply(1:nsem, function(x) testsemanprov(x, datos)))
-    ##          for (i in 2:nsem) {
-    ##              salidaPS <- rbind(salidaPS, testsemanprov(i, datos))
-    ##          }
-
+    TESTPS <- test_prov_aux(datos)
+    salidaPS <- bind_rows(lapply(1:nsem, function(x) testsemanprov(x, TESTPS, datos)))
     auxsemana <- (as.numeric(salidaPS$semana) - 1) * 7 + 1
     salidaPS$labelsemana <- as.Date(auxsemana, origin = "2020-01-26")
 
@@ -50,16 +27,16 @@ graficosemanas <- function(datos) {
                                            labelsemana, "\ntest:", TestTot,
                                            "\npositivos:", TestPos,
                                            "\nPositividad", PorcPos, "%"))) +
-        geom_line(size = 1) +
+        geom_line(size = 1, aes(colour = Provincia)) +
         xlab("Semana") +
         ylab("Porcentaje de positividad") +
         scale_x_date(date_labels = "%b %d")
     p <- ggplotly(d, tooltip = "text") %>% add_markers()
+    
     return(p)
 }
 
-testsemanprov <- function(LAsemana, datos) {
-    ## funcion calcula la positividad para LAsemana en todas las provincias
+test_prov_aux <- function(datos){
     ConfPS <- datos %>%
         group_by(Provincia, SemanaNum) %>%
         summarise(sum(Clasificacion == "Confirmado"))
@@ -73,10 +50,12 @@ testsemanprov <- function(LAsemana, datos) {
                         (sum(Clasificacion == "Descartado") +
                          sum(Clasificacion == "Confirmado"))))
     TESTPS <- bind_cols(TotalPS, ConfPS[, 3], PorPosPS[, 3])
-    ##          TESTPS <- data.frame(TESTPS)
-    
     colnames(TESTPS) <- c("Provincia", "semana", "TestTot", "TestPos", "PorcPos")
+    return(TESTPS)
+}
 
+testsemanprov <- function(LAsemana, TESTPS, datos) {
+    ## calcula la positividad para LAsemana en todas las provincias
     TESTPSELEC <- filter(TESTPS, semana == LAsemana)
     todoelec <- TESTPSELEC
     
@@ -121,11 +100,6 @@ graficosemanaPAIS <- function(LAsemana, datos, mapaarg) {
 graficosemanasAMBA <- function(datos) {
     nsem <- max(as.numeric(datos$SemanaNum))
     salidaPS <- bind_rows(lapply(1:nsem, function(x) testsemanaAMBA(x, datos)))
-    ##          salidaPS <- testsemanaAMBA(1, datos)
-    ##          for (i in 2:nsem) { holis
-    ##              salidaPS <- bind_rows(salidaPS, testsemanaAMBA(i, datos))
-    ##          }
-
     auxsemana <- (as.numeric(salidaPS$semana) - 1) * 7 + 1
     salidaPS$labelsemana <- as.Date(auxsemana, origin = "2020-01-26")
 

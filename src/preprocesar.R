@@ -1,6 +1,6 @@
-preprocesar <- function(data_file_name) {
+preprocesar <- function(input_filename) {
     ## Datos crudos
-    sisa_estudiados <- read.csv(data_file_name,
+    sisa_estudiados <- read.csv(input_filename,
                                 sep = ",",
                                 header = TRUE,
                                 encoding = "UTF-8",
@@ -34,7 +34,7 @@ preprocesar <- function(data_file_name) {
     sisa_estudiados$labelsemana <- as.integer(as.Date(auxsemana, origin = "2020-01-26"))
     
     ## Final output
-    covdeter <- select(sisa_estudiados,
+    output <- select(sisa_estudiados,
                        "Clasificacion" = clasificacion_resumen,
                        "Fecha"         = fecha_apertura,
                        "SemanaNum"     = semanaFA,
@@ -43,5 +43,5 @@ preprocesar <- function(data_file_name) {
                        "Departamento"  = residencia_departamento_nombre
                        )
 
-    return(covdeter)
+    return(output)
 }

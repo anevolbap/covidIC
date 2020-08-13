@@ -2,15 +2,20 @@ library(shiny)
 
 source("src/plots.R")
 source("src/preprocesar.R")
+source("src/utils.R")
 
-covdeter = preprocesar("data/Covid19Casos.csv")
+## ------------------------------------------------
+input_filename = "data/Covid19Casos.csv"
+output_filename = "data/Covid19Casos-procesado.csv"
+## ------------------------------------------------
 
+data = load_processed_data(input_filename, output_filename)
+    
 ui <- fluidPage(
     titlePanel('DaniApp'),
     sidebarLayout(
         sidebarPanel(
-            h4("Parameters"),
-            numericInput("semana", "semana", value = 21)
+            numericInput("semana", "Semana", value = 21)
         ),
         mainPanel(
             tabsetPanel(
@@ -28,19 +33,19 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     
     output$plot_semanas_todas <- renderPlotly({
-        graficosemanas(covdeter)
+        graficosemanas(data)
     })
     
     output$plot_semana_PAIS <- renderPlotly({
-        graficosemanaPAIS(input$semana, covdeter, argen)
+        graficosemanaPAIS(input$semana, data, argen)
     })
 
     output$plot_semanas_toda_AMBA <- renderPlotly({
-        graficosemanasAMBA(covdeter)
+        graficosemanasAMBA(data)
     })
     
     output$plot_semana_AMBA <- renderPlotly({
-        graficosemanaAMBA(input$semana, covdeter, mapaAMBA)
+        graficosemanaAMBA(input$semana, data, mapaAMBA)
     })
 }
 
