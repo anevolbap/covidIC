@@ -3,7 +3,7 @@ test_df <- function(datos, group) {
 
     datos %>%
         ##  FIXME: revisar esta bizarreada
-        group_by(!!!rlang::syms(group), semana, SemanaLab) %>%
+        group_by(!!!rlang::syms(group), semana) %>%
         summarise(
             TestPos =
                 sum(Clasificacion == "Confirmado"),

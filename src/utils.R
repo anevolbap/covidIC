@@ -39,3 +39,7 @@ distrito_a_seccion <- function(distrito) {
            AMBA = "Departamento",
            PAIS = "Provincia")
 }
+
+redondear_fecha <- function(fecha) {
+    floor_date(as.Date(fecha), "weeks", week_start = 1)
+}

@@ -1,4 +1,5 @@
 library(tidyverse)
+library(ggthemes)
 library(plotly)
 library(sf)
 library(sp)             # FIXME: se usa?
@@ -11,15 +12,16 @@ plot_curva_positividad <- function(datos) {
     #'
     #' @param datos
     #' @return
-    
+
     group = colnames(datos)[1]
     p <- ggplot(datos,
-                aes(x = SemanaLab,
+                aes(
+                    x = semana,
                     y = PorcPos,
                     group = get(group),
                     color = get(group),
                     text = paste(get(group),
-                                 "\n semana:", SemanaLab,
+                                 "\n semana:", semana,
                                  "\n test:", TestTot,
                                  "\n positivos:", TestPos,
                                  "\n Positividad:", PorcPos, "%"))) +
@@ -32,9 +34,7 @@ plot_curva_positividad <- function(datos) {
 }
 
 plot_positividad_por_semana <- function(semana, datos, distrito) {
-    
-    datos = select(datos, -SemanaLab)
-    
+      
     if (distrito == "AMBA"){
         ret = grafico_semana_AMBA(semana, datos, mapa_AMBA)
     }
@@ -53,10 +53,6 @@ grafico_semana_PAIS <- function(semana, datos, mapa) {
     #'
 
     group = "Provincia"
-    
-    semanaN1 <- (semana - 1) * 7 + 1
-    semanaN <- as.Date(semanaN1, origin = "2020-01-31")
-
     mapa1 <- left_join(mapa, test_por_semana(semana, datos, group), by = group)
 
     ##
@@ -67,8 +63,8 @@ grafico_semana_PAIS <- function(semana, datos, mapa) {
                                                 TestPos, "positivos\n",
                                                 PorcPos, "Positividad (%)"))) +
         coord_sf(xlim = c(-80, -45), ylim = c(-55, -20), clip = "on") +
-        ggtitle(paste("semana", semanaN)) +
-        labs(fill = "Positividad (%)", scale_fill_viridis_c(alpha = 0.8))
+        labs(fill = "(%)", scale_fill_viridis_c(alpha = 0.8)) +
+        theme_map()
     mp <- girafe(ggobj = mp)
     mp
 }
@@ -89,8 +85,8 @@ grafico_semana_AMBA <- function(semana, datos, mapa) {
                                                 TestTot, "test \n",
                                                 TestPos, "positivos\n", PorcPos,
                                                 "Positividad (%)"))) + 
-        ggtitle(paste("semana", semana)) +
-        labs(fill = "Positividad (%)", scale_fill_viridis_c(alpha = 0.8))
+        labs(fill = "(%)", scale_fill_viridis_c(alpha = 0.8)) +
+        theme_map()
     mp <- girafe(ggobj = mp)
     mp
 }
