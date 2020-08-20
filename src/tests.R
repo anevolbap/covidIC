@@ -16,44 +16,35 @@ test_df <- function(datos, group){
     return(salida)
 }
 
-testsemanprov <- function(LAsemana, TESTPS, datos) {
-    ## Calcula la positividad para LAsemana en todas las provincias
-    TESTPSELEC <- filter(TESTPS, semana == LAsemana)
-    todoelec <- TESTPSELEC
+test_por_semana <- function(LAsemana, test_df, group) {
     
-    ## esto lo hago por si hay provincias que no fue medido test para que ponga 0 y no NA
-    if (length(unique(datos$Provincia)) != length(unique(TESTPSELEC$Provincia))) {
-        numprov <- length(unique(datos$Provincia))
-        PROVINCIASNA <- data.frame(unique(datos$Provincia))
-        aux <- matrix(rep(0, numprov * 3), numprov, 3)
-        PROVINCIASNA <- cbind(PROVINCIASNA, rep(LAsemana, numprov), aux)
-        colnames(PROVINCIASNA) <- c("Provincia", "semana", "TestTot", "TestPos", "PorcPos")
-        PROVSINTEST <- PROVINCIASNA %>% filter(!Provincia %in% unique(TESTPSELEC$Provincia))
-        todoelec <- bind_rows(TESTPSELEC, PROVSINTEST)
-    }
-    reside <- todoelec$Provincia
-    todoelec$Provincia <- ifelse(reside == "Tierra del Fuego",
-                                 "Tierra del Fuego, Antártida e Islas del Atlántico Sur",
-                                 reside)
-    return(todoelec)
-}
+    ## Calcula la positividad para LAsemana
+    ret = test_df %>%
+        filter(semana == LAsemana) %>%
+        left_join(data.frame(group = PROVINCIAS),
+                  by = group)
 
-testsemanaAMBA <- function(LAsemana, TESTDS, datosAMBA) {
-    
-    TESTDSELEC <- filter(TESTDS, semana == LAsemana)
-    todoelec <- TESTDSELEC
+    print(head(ret))
+    ## esto lo hago por si hay regiones que no fue medido test para que ponga 0 y no NA
+    ##          if (length(unique(datos$Provincia)) != length(unique(test_df_semana$Provincia))) {
+    ##              num <- length(unique(datos$Provincia))
+    ##              df_NA <- data.frame(unique(datos$Provincia))
+    ##              aux <- matrix(rep(0, numprov * 3), numprov, 3)
+    ##              df_NA <- cbind(df_NA, rep(LAsemana, numprov), aux)
+    ##              colnames(df_NA) <- c(group, "semana", "TestTot", "TestPos", "PorcPos")
+    ##              sin_test <- df_NA %>% filter(!get(group) %in% unique(test_df_semana$Provincia))
+    ##              todoelec <- bind_rows(test_df_semana, sin_test)
+    ##          }
 
-    ## TODO: refactorar con testsemanprov
+    ##          if (length(unique(datosAMBA$Departamento)) != length(unique(TESTDSELEC$Departamento))) {
+    ##              num <- length(AMBA)
+    ##              df_NA <- data.frame(AMBA)
+    ##              aux <- matrix(rep(0, numdep * 3), num, 3)
+    ##              df_NA <- cbind(df_NA, rep(LAsemana, num), aux)
+    ##              colnames(df_NA) <- c(group, "semana", "TestTot", "TestPos", "PorcPos")
+    ##              sin_test <- df_NA %>% filter(!Departamento %in% unique(TESTDSELEC$Departamento))
+    ##              todoelec <- bind_rows(TESTDSELEC, sin_test)
+    ##          }
     
-    ## esto lo hago por si hay provincias que no fue medido test para que ponga 0
-    if (length(unique(datosAMBA$Departamento)) != length(unique(TESTDSELEC$Departamento))) {
-        numdep <- length(AMBA)
-        DepartamentoNA <- data.frame(AMBA)
-        aux <- matrix(rep(0, numdep * 3), numdep, 3)
-        DepartamentoNA <- cbind(DepartamentoNA, rep(LAsemana, numdep), aux)
-        colnames(DepartamentoNA) <- c("Departamento", "semana", "TestTot", "TestPos", "PorcPos")
-        DepSINTEST <- DepartamentoNA %>% filter(!Departamento %in% unique(TESTDSELEC$Departamento))
-        todoelec <- bind_rows(TESTDSELEC, DepSINTEST)
-    }
-    return(todoelec)
+    return(ret)
 }

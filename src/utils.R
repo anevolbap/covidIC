@@ -1,6 +1,3 @@
-##          library(readr) 
-##          library(feather)
-
 load_processed_data <- function(input_filename, output_filename) {
     #' Si existe el archivo de datos procesados lo carga, si no los procesa,
     #' guarda el archivo y los devuelve
@@ -15,7 +12,6 @@ load_processed_data <- function(input_filename, output_filename) {
     if (!file.exists(output_filename)){
         data <- preprocesar(input_filename)
         saveRDS(data, output_filename)
-        ##          write_feather(data, output_filename)
     } else {
         data <- readRDS(output_filename)
     }
@@ -36,4 +32,10 @@ datos_AMBA <- function(datos){
     datosCABA$Departamento <- rep("Ciudad Autónoma de Buenos Aires", ncaba)
     datosAMBA <- bind_rows(datosCABA, datosGBA)
     return(datosAMBA)
+}
+
+distrito_a_seccion <- function(distrito) {
+    switch(distrito,
+           AMBA = "Departamento",
+           PAIS = "Provincia")
 }

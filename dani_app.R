@@ -1,17 +1,20 @@
 library(shiny)
+library(tidyverse)
+library(lubridate)
 library(ggiraph)
+
+source("src/mapas.R")
 source("src/plots.R")
 source("src/preprocesar.R")
 source("src/utils.R")
 
 ## ------------------------------------------------
-input_filename = "data/Covid19Casos.csv"
-output_filename = "data/Covid19Casos-procesado.RDS"
+SIDEBARPANEL_WIDTH = 2
+INPUT_FILENAME = "data/Covid19Casos.csv"
+OUTPUT_FILENAME = "data/Covid19Casos-procesado.RDS"
 ## ------------------------------------------------
 
-data = load_processed_data(input_filename, output_filename)
-
-SIDEBARPANEL_WIDTH = 2
+data = load_processed_data(INPUT_FILENAME, OUTPUT_FILENAME)
 
 ui <- fluidPage(
     titlePanel('Positividad'),
@@ -20,7 +23,8 @@ ui <- fluidPage(
             selectInput("distrito", "Distrito", choices = c("AMBA", "PAIS")),
             conditionalPanel(
                 condition = "input.tabs == 'Mapa'",
-                numericInput("semana", "Semana", value = 14)
+                numericInput("semana", "Semana", value = 14),
+                dateInput("fecha", "Fecha", value = FECHA_ORIGEN)
             ),
             width = SIDEBARPANEL_WIDTH
         ),
@@ -35,13 +39,19 @@ ui <- fluidPage(
 )
 
 server <- function(input, output, session) {
-    
-    output$plot_semanas_todas <- renderPlotly({
-        plot_curva_positividad(data, input$distrito)
+
+    los_datos <- reactive({
+        test_df(data, distrito_a_seccion(input$distrito))
     })
-    
+   
+    output$plot_semanas_todas <- renderPlotly({
+        plot_curva_positividad(los_datos())
+    })
+
     output$plot_por_semana <- renderGirafe({
-        grafico_por_semana(input$semana, data, input$distrito)
+        plot_positividad_por_semana(input$semana,
+                                    los_datos(),
+                                    input$distrito)
     })
 }
 

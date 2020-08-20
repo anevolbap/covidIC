@@ -22,7 +22,11 @@ preprocesar <- function(input_filename) {
         mutate(provincia = replace(
                    residencia_provincia_nombre,
                    residencia_provincia_nombre == "CABA",
-                   "Ciudad Autónoma de Buenos Aires")                
+                   "Ciudad Autónoma de Buenos Aires"),
+               provincia = replace(
+                   residencia_provincia_nombre,
+                   residencia_provincia_nombre == "Tierra del Fuego",
+                   "Antártida e Islas del Atlántico Sur")
                )
 
     ## Fechas
@@ -30,13 +34,13 @@ preprocesar <- function(input_filename) {
         mutate(labelsemana = floor_date(as.Date(fecha_apertura),
                                         "weeks", week_start = 1),
                semanaFA = isoweek(fecha_apertura) - isoweek(FECHA_ORIGEN)
-               )
+               ) 
       
     ## Final output
     output <- select(sisa_estudiados,
                        "Clasificacion" = clasificacion_resumen,
                        "Fecha"         = fecha_apertura,
-                       "SemanaNum"     = semanaFA,
+                       "semana"        = semanaFA,
                        "SemanaLab"     = labelsemana,
                        "Provincia"     = provincia,
                        "Departamento"  = residencia_departamento_nombre

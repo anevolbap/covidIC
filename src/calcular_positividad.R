@@ -1,59 +1,44 @@
+test_df <- function(datos, group) {
+    #' Devuelve summaries sobre tests.
 
-test_df <- function(datos, group){
-    ## Devuelve summaries sobre tests.
-    salida <- datos %>% 
-        group_by(!!!rlang::syms(group), SemanaNum, SemanaLab) %>%   # FIXME: revisar esta bizarreada
-        summarise(TestPos =
-                      sum(Clasificacion == "Confirmado"),
-                  TestTot =
-                      sum(Clasificacion == "Descartado") +
-                      sum(Clasificacion == "Confirmado"),
-                  PorcPos =
-                      round(100 * sum(Clasificacion == "Confirmado") /
-                                  (sum(Clasificacion == "Descartado") +
-                                   sum(Clasificacion == "Confirmado")))) %>%
-        rename(semana = SemanaNum)         
-    return(salida)
+    datos %>%
+        ##  FIXME: revisar esta bizarreada
+        group_by(!!!rlang::syms(group), semana, SemanaLab) %>%
+        summarise(
+            TestPos =
+                sum(Clasificacion == "Confirmado"),
+            TestTot =
+                sum(Clasificacion == "Descartado") +
+                sum(Clasificacion == "Confirmado"),
+            PorcPos =
+                round(100 * sum(Clasificacion == "Confirmado") /
+                      (sum(Clasificacion == "Descartado") +
+                       sum(Clasificacion == "Confirmado")))
+        ) ##          %>%
+        ##          rename(semana = SemanaNum)
 }
 
-testsemanprov <- function(LAsemana, TESTPS, datos) {
-    ## Calcula la positividad para LAsemana en todas las provincias
-    TESTPSELEC <- filter(TESTPS, semana == LAsemana)
-    todoelec <- TESTPSELEC
-    
-    ## esto lo hago por si hay provincias que no fue medido test para que ponga 0 y no NA
-    if (length(unique(datos$Provincia)) != length(unique(TESTPSELEC$Provincia))) {
-        numprov <- length(unique(datos$Provincia))
-        PROVINCIASNA <- data.frame(unique(datos$Provincia))
-        aux <- matrix(rep(0, numprov * 3), numprov, 3)
-        PROVINCIASNA <- cbind(PROVINCIASNA, rep(LAsemana, numprov), aux)
-        colnames(PROVINCIASNA) <- c("Provincia", "semana", "TestTot", "TestPos", "PorcPos")
-        PROVSINTEST <- PROVINCIASNA %>% filter(!Provincia %in% unique(TESTPSELEC$Provincia))
-        todoelec <- bind_rows(TESTPSELEC, PROVSINTEST)
-    }
-    reside <- todoelec$Provincia
-    todoelec$Provincia <- ifelse(reside == "Tierra del Fuego",
-                                 "Tierra del Fuego, Antártida e Islas del Atlántico Sur",
-                                 reside)
-    return(todoelec)
-}
+test_por_semana <- function(la_semana, positividad_df, group) {
+    #' Calcula la positividad para la_semana
 
-testsemanaAMBA <- function(LAsemana, TESTDS, datosAMBA) {
-    
-    TESTDSELEC <- filter(TESTDS, semana == LAsemana)
-    todoelec <- TESTDSELEC
-
-    ## TODO: refactorar con testsemanprov
-    
-    ## esto lo hago por si hay provincias que no fue medido test para que ponga 0
-    if (length(unique(datosAMBA$Departamento)) != length(unique(TESTDSELEC$Departamento))) {
-        numdep <- length(AMBA)
-        DepartamentoNA <- data.frame(AMBA)
-        aux <- matrix(rep(0, numdep * 3), numdep, 3)
-        DepartamentoNA <- cbind(DepartamentoNA, rep(LAsemana, numdep), aux)
-        colnames(DepartamentoNA) <- c("Departamento", "semana", "TestTot", "TestPos", "PorcPos")
-        DepSINTEST <- DepartamentoNA %>% filter(!Departamento %in% unique(TESTDSELEC$Departamento))
-        todoelec <- bind_rows(TESTDSELEC, DepSINTEST)
+    if (group == "Provincia") {
+        group_df <- data.frame(PROVINCIAS)
+        colnames(group_df) <- group
     }
-    return(todoelec)
+    if (group == "Departamento") {
+        group_df <- data.frame(AMBA)
+        colnames(group_df) <- group
+    }
+
+    ret <- positividad_df %>%
+        filter(semana == la_semana) %>%
+        right_join(data.frame(group_df), by = group) %>%
+        replace_na(list(
+            semana = la_semana,
+            TestPos = 0,
+            TestTot = 0,
+            PorcPos = 0
+        ))
+    
+    return(ret)
 }

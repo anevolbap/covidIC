@@ -4,45 +4,37 @@ library(sf)
 library(sp)             # FIXME: se usa?
 library(RColorBrewer)   # FIXME: se usa?
 
-source("src/tests.R")
-source("src/mapas.R")
+source("src/calcular_positividad.R")
 
-plot_curva_positividad <- function(datos, distrito) {
+plot_curva_positividad <- function(datos) {
     #' Grafica la positividad por semana para cada distrito
     #'
     #' @param datos
-    #' @param distrito "A"
-    if (distrito == "AMBA") {
-        datos <- datos_AMBA(datos)
-        group <- "Departamento"
-        fun <- testsemanaAMBA
-    }
-    if (distrito == "PAIS") {
-        group <- "Provincia"
-        fun <- testsemanprov
-    }
+    #' @return
     
-    testPS <- test_df(datos, group = group)
-    salidaPS <- bind_rows(lapply(1:max(datos$SemanaNum),
-                                 function(x) fun(x, testPS, datos)))
-
-    d <- ggplot(salidaPS,
-                aes(x = SemanaLab, y = PorcPos, group = get(group),
-                    text = paste("provincia:", group,
-                                 "\nsemana", SemanaLab,
-                                 "\ntest:", TestTot,
-                                 "\npositivos:", TestPos,
-                                 "\nPositividad", PorcPos, "%"))) +
-        geom_line(size = 1, aes(colour = get(group))) +
+    group = colnames(datos)[1]
+    p <- ggplot(datos,
+                aes(x = SemanaLab,
+                    y = PorcPos,
+                    group = get(group),
+                    color = get(group),
+                    text = paste(get(group),
+                                 "\n semana:", SemanaLab,
+                                 "\n test:", TestTot,
+                                 "\n positivos:", TestPos,
+                                 "\n Positividad:", PorcPos, "%"))) +
+        geom_line(size = 1) +
         xlab("Fecha") +
-        ylab("Porcentaje de positividad") +
+        ylab("Positividad (%)") +
         scale_x_date(date_labels = "%b %d")
-    p <- ggplotly(d, tooltip = "text") %>% add_markers()
-    
-    return(p)
+    p = ggplotly(p, tooltip = 'text') %>% add_markers()
+    p
 }
 
-grafico_por_semana <- function(semana, datos, distrito) {
+plot_positividad_por_semana <- function(semana, datos, distrito) {
+    
+    datos = select(datos, -SemanaLab)
+    
     if (distrito == "AMBA"){
         ret = grafico_semana_AMBA(semana, datos, mapa_AMBA)
     }
@@ -52,7 +44,7 @@ grafico_por_semana <- function(semana, datos, distrito) {
     ret 
 }
 
-grafico_semana_PAIS <- function(semana, datos, mapa_arg) {
+grafico_semana_PAIS <- function(semana, datos, mapa) {
     #' Funcion que grafica en un mapa positividad para una semana dada
     #'
     #' @param semana la semana a graficar
@@ -60,20 +52,20 @@ grafico_semana_PAIS <- function(semana, datos, mapa_arg) {
     #' @param mapa_arg datos para el mapa
     #'
 
-    TESTPS <- test_df(datos, group = "Provincia")
-    todoelec <- testsemanprov(semana, TESTPS, datos)
-
-    mapa_arg1 <- left_join(mapa_arg, todoelec)
-    posiblessemanas <- unique(datos$SemanaLab)
+    group = "Provincia"
+    
     semanaN1 <- (semana - 1) * 7 + 1
     semanaN <- as.Date(semanaN1, origin = "2020-01-31")
 
+    mapa1 <- left_join(mapa, test_por_semana(semana, datos, group), by = group)
+
     ##
-    mp <- ggplot(data = mapa_arg1) +
+    mp <- ggplot(data = mapa1) +
         geom_sf_interactive(aes(fill = PorcPos,
-                                tooltip = paste(Provincia, "\n", TestTot, "test </b>  \n",
-                                                TestPos, "positivos\n", PorcPos,
-                                                "Positividad (%)")))  +
+                                tooltip = paste(Provincia, "\n",
+                                                TestTot, "test \n",
+                                                TestPos, "positivos\n",
+                                                PorcPos, "Positividad (%)"))) +
         coord_sf(xlim = c(-80, -45), ylim = c(-55, -20), clip = "on") +
         ggtitle(paste("semana", semanaN)) +
         labs(fill = "Positividad (%)", scale_fill_viridis_c(alpha = 0.8))
@@ -81,29 +73,23 @@ grafico_semana_PAIS <- function(semana, datos, mapa_arg) {
     mp
 }
 
-grafico_semana_AMBA <- function(LAsemana, datos, mapaAMBA) {
-    salida <- testsemanaAMBA(LAsemana, test_df(datos,"Departamento"), mapaAMBA)
-    mapaAMBA$Departamento <- mapaAMBA$nam
-    mapaAMBA$Departamento[mapaAMBA$gna == "Comuna"] <- "Ciudad Autónoma de Buenos Aires"
-    ## TODO sacar afuera
-    listado <- c(390, 391, 445, 9, 11, 57, 50, 62, 52, 53, 97, 74, 101, 122,
-                 145, 146, 147, 179, 299, 199, 309, 191, 192, 197, 200, 205,
-                 260, 354, 355, 273, 306, 350, 351, 375, 392, 393, 420, 419,
-                 433, 439, 440, 452, 446, 449, 450, 451, 453, 458, 461, 520,
-                 521, 60, 187, 202, 196)
-    LosdeGBABA <- (mapaAMBA$gid %in% listado)
-    GBABA <- mapaAMBA[LosdeGBABA, ]
-    GBABA2 <- left_join(GBABA, salida, by = "Departamento")
-    auxsemana <- (LAsemana - 1) * 7 + 1
-    semanaN <- as.Date(auxsemana, origin = "2020-01-26")
+grafico_semana_AMBA <- function(semana, datos, mapa) {
+    
+    mapa$Departamento <- mapa$nam
+    mapa$Departamento[mapa$gna == "Comuna"] <- "Ciudad Autónoma de Buenos Aires"
+    LosdeGBABA <- (mapa$gid %in% LISTADO)
+    GBABA <- mapa[LosdeGBABA, ]
+
+    group = "Departamento"
+    GBABA2 <- left_join(GBABA, test_por_semana(semana, datos, group), by = group)
    
     mp <- ggplot(data = GBABA2) +
         geom_sf_interactive(aes(fill = PorcPos,
                                 tooltip = paste(Departamento, "\n",
-                                                TestTot, "test </b>  \n",
+                                                TestTot, "test \n",
                                                 TestPos, "positivos\n", PorcPos,
                                                 "Positividad (%)"))) + 
-        ggtitle(paste("semana", semanaN)) +
+        ggtitle(paste("semana", semana)) +
         labs(fill = "Positividad (%)", scale_fill_viridis_c(alpha = 0.8))
     mp <- girafe(ggobj = mp)
     mp
