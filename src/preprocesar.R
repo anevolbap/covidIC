@@ -9,44 +9,31 @@ preprocesar <- function(input_filename) {
                                 encoding = "UTF-8",
                                 stringsAsFactors = FALSE)
 
-    ## Limpieza
-    sisa_estudiados <- filter(
-        sisa_estudiados,
-        residencia_provincia_nombre != "SIN ESPECIFICAR", # con provincia
-        fecha_diagnostico != "", # confirmados o descartados
-        fecha_apertura != "" # con fecha de apertura
-    )
-
-    ## Renombro CABA para pegar los mapas  # TODO: revisar
-    sisa_estudiados <- sisa_estudiados %>%
-        mutate(provincia = replace(
-                   residencia_provincia_nombre,
-                   residencia_provincia_nombre == "CABA",
-                   "Ciudad Autónoma de Buenos Aires"),
-               provincia = replace(
-                   residencia_provincia_nombre,
-                   residencia_provincia_nombre == "Tierra del Fuego",
-                   "Antártida e Islas del Atlántico Sur")
-               )
-
-    ## Fechas
-    sisa_estudiados <- sisa_estudiados %>%
-        mutate(label_semana = floor_date(as.Date(fecha_apertura),
+    ## Proceso
+    output <- sisa_estudiados %>%
+        filter(
+            residencia_provincia_nombre != "SIN ESPECIFICAR", # con provincia
+            fecha_diagnostico != "", # confirmados o descartados
+            fecha_apertura != "" # con fecha de apertura
+        ) %>%
+        mutate(
+            provincia = replace(
+                residencia_provincia_nombre,
+                residencia_provincia_nombre == "CABA",
+                "Ciudad Autónoma de Buenos Aires"),
+            provincia = replace(
+                residencia_provincia_nombre,
+                residencia_provincia_nombre == "Tierra del Fuego",
+                "Antártida e Islas del Atlántico Sur"),
+            label_semana = floor_date(as.Date(fecha_apertura), 
                                          "weeks", week_start = 1)
-               ##          ,
-               ##           semanaFA = isoweek(fecha_apertura) - isoweek(FECHA_ORIGEN)
-               ) 
+        ) %>%
+        select(
+            "Clasificacion" = clasificacion_resumen,
+            "Fecha"         = fecha_apertura,
+            "semana"        = label_semana,
+            "Provincia"     = provincia,
+            "Departamento"  = residencia_departamento_nombre)
     
-    ## Final output
-    output <- select(sisa_estudiados,
-                     "Clasificacion" = clasificacion_resumen,
-                     "Fecha"         = fecha_apertura,
-                     ##          "semana"        = semanaFA,
-                     ##          "SemanaLab"     = labelsemana,
-                     "semana" = label_semana,
-                     "Provincia"     = provincia,
-                     "Departamento"  = residencia_departamento_nombre
-                       )
-
     return(output)
 }

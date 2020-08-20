@@ -28,7 +28,8 @@ plot_curva_positividad <- function(datos) {
         geom_line(size = 1) +
         xlab("Fecha") +
         ylab("Positividad (%)") +
-        scale_x_date(date_labels = "%b %d")
+        scale_x_date(date_labels = "%b %d") +
+        theme(legend.title = element_blank())
     p = ggplotly(p, tooltip = 'text') %>% add_markers()
     p
 }

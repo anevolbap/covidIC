@@ -1,9 +1,8 @@
 test_df <- function(datos, group) {
-    #' Devuelve summaries sobre tests.
+    #' Calcula el porcentaje de positividad.
 
     datos %>%
-        ##  FIXME: revisar esta bizarreada
-        group_by(!!!rlang::syms(group), semana) %>%
+        group_by_at(.vars = c(group, "semana")) %>%
         summarise(
             TestPos =
                 sum(Clasificacion == "Confirmado"),
@@ -14,8 +13,7 @@ test_df <- function(datos, group) {
                 round(100 * sum(Clasificacion == "Confirmado") /
                       (sum(Clasificacion == "Descartado") +
                        sum(Clasificacion == "Confirmado")))
-        ) ##          %>%
-        ##          rename(semana = SemanaNum)
+        ) 
 }
 
 test_por_semana <- function(la_semana, positividad_df, group) {
@@ -30,6 +28,7 @@ test_por_semana <- function(la_semana, positividad_df, group) {
         colnames(group_df) <- group
     }
 
+    ## Completo missing con 0
     ret <- positividad_df %>%
         filter(semana == la_semana) %>%
         right_join(data.frame(group_df), by = group) %>%
