@@ -1,8 +1,7 @@
 test_df <- function(datos, group) {
     #' Calcula el porcentaje de positividad.
-
     datos %>%
-        group_by_at(.vars = c(group, "semana")) %>%
+        group_by_at(.vars = c(distrito_a_seccion(group), "semana")) %>%
         summarise(
             TestPos =
                 sum(Clasificacion == "Confirmado"),

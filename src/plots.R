@@ -2,8 +2,6 @@ library(tidyverse)
 library(ggthemes)
 library(plotly)
 library(sf)
-library(sp)             # FIXME: se usa?
-library(RColorBrewer)   # FIXME: se usa?
 
 source("src/calcular_positividad.R")
 

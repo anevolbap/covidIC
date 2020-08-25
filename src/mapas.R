@@ -1,3 +1,5 @@
+library(sf)
+
 ## Mapa AMBA
 mapa_AMBA <- st_read("data/departamento.shp", stringsAsFactors = FALSE)
 

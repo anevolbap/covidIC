@@ -2,6 +2,7 @@ library(shiny)
 library(tidyverse)
 library(lubridate)
 library(ggiraph)
+library(sf)
 
 source("src/mapas.R")
 source("src/plots.R")
@@ -42,7 +43,10 @@ ui <- fluidPage(
 server <- function(input, output, session) {
 
     los_datos <- reactive({
-        test_df(data, distrito_a_seccion(input$distrito))
+        if (input$distrito == "AMBA"){  ## TODO: improve
+            data <- filter(data, Departamento %in% AMBA)
+        }
+        test_df(data, input$distrito)
     })
    
     output$plot_semanas_todas <- renderPlotly({
